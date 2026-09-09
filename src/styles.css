@@ -1,0 +1,1614 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS
+   Single source of truth for the brand ramp, elevation and easing. Kept as
+   CSS variables (not only Tailwind tokens) so plain CSS blocks further down
+   this file can use them too.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+  --ba-gold-50: #fdfbf0;
+  --ba-gold-100: #faf4d8;
+  --ba-gold-200: #f2e6a8;
+  --ba-gold-300: #e6d374;
+  --ba-gold-400: #d9be45;
+  --ba-gold: #c8a415;
+  --ba-gold-600: #b08e10;
+  --ba-gold-700: #8d710d;
+
+  --ba-ink: #100f0a;
+  --ba-ink-700: #2f2e2a;
+  --ba-ink-500: #5a5952;
+  --ba-ink-300: #a5a49d;
+  --ba-ink-100: #e7e7e4;
+
+  --ba-ring: 0 0 0 3px rgba(200, 164, 21, 0.32);
+  --ba-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ba-ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Set to 0 by the reduced-motion query below; decorative animations are
+     multiplied by it so a single switch disables them all. */
+  --ba-motion: 1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  /* Sticky header is 64–128px tall depending on breakpoint; keep anchor
+     targets from landing underneath it. */
+  scroll-padding-top: 7rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, "Inter var", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  /* Enable the optical niceties variable Inter ships with. */
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: var(--ba-ink-700);
+  background: #fff;
+  /* Prevents a stray wide element (carousel track, long nav row) from creating
+     a horizontal scrollbar on small screens. */
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4 {
+  font-family: "Plus Jakarta Sans", Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+/* Tabular figures for anything numeric so prices and counters do not jitter
+   as digits change. */
+.ba-nums {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ── Focus visibility ────────────────────────────────────────────────────
+   A single consistent ring for keyboard users. Mouse clicks do not trigger
+   :focus-visible, so this never shows up as an unwanted outline. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: var(--ba-ring);
+  border-radius: 10px;
+}
+
+/* ── Custom scrollbar ───────────────────────────────────────────────── */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ba-ink-300) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: var(--ba-ink-300);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--ba-gold);
+}
+
+::selection {
+  background: var(--ba-gold-200);
+  color: var(--ba-ink);
+}
+
+/* ── Customer portal ───────────────────────────────────────────────────
+   Legacy account pages were authored as separate black surfaces. This shared
+   skin gives the whole authenticated journey one premium light vocabulary
+   without duplicating a second palette across every page. The selectors are
+   intentionally scoped: storefront and admin utility classes are untouched. */
+.customer-portal {
+  color: var(--ba-ink-700);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(230, 211, 116, 0.22), transparent 30rem),
+    radial-gradient(circle at 92% 18%, rgba(200, 164, 21, 0.08), transparent 24rem),
+    linear-gradient(180deg, #fafaf8 0%, #fff 42%, #fdfcf8 100%) !important;
+}
+
+.customer-portal [class~="text-white"] { color: var(--ba-ink) !important; }
+.customer-portal [class*="text-white/"] { color: var(--ba-ink-500) !important; }
+.customer-portal [class*="border-white/"] { border-color: var(--ba-ink-100) !important; }
+.customer-portal [class*="bg-white/"]:not([class*="bg-[#d4af37]"]):not([class*="bg-emerald"]):not([class*="bg-red"]):not([class*="bg-sky"]):not([class*="bg-violet"]):not([class*="bg-amber"]) {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+  box-shadow: 0 14px 40px rgba(16, 15, 10, 0.055);
+}
+.customer-portal [class*="bg-[#0e0e18]"],
+.customer-portal [class*="bg-[#0a0a0f]"] {
+  background-color: #fff !important;
+  border-color: var(--ba-ink-100) !important;
+  color: var(--ba-ink-700) !important;
+}
+.customer-portal [class*="bg-black/"] {
+  background-color: rgba(16, 15, 10, 0.62) !important;
+  box-shadow: none !important;
+}
+.customer-portal input,
+.customer-portal textarea,
+.customer-portal select {
+  color: var(--ba-ink) !important;
+  background-color: #fff !important;
+  border-color: var(--ba-ink-100) !important;
+}
+.customer-portal input::placeholder,
+.customer-portal textarea::placeholder { color: var(--ba-ink-300) !important; }
+.customer-portal .text-yellow-400 { color: #a16207 !important; }
+.customer-portal .text-sky-400,
+.customer-portal .text-blue-400 { color: #0369a1 !important; }
+.customer-portal .text-violet-400 { color: #7e22ce !important; }
+.customer-portal .text-emerald-400 { color: #047857 !important; }
+.customer-portal .text-red-400 { color: #b91c1c !important; }
+.customer-portal .shadow-2xl {
+  box-shadow: 0 28px 80px rgba(16, 15, 10, 0.18) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ANIMATION PRIMITIVES
+   Composable, GPU-friendly classes. Everything here is decorative and is
+   switched off wholesale by `prefers-reduced-motion` at the end of the file.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Scroll reveal. `IntersectionObserver` in `useReveal` adds `.is-in`; the
+   initial state is declared in CSS so there is no flash of shifted content
+   before the observer attaches. */
+.ba-reveal {
+  opacity: 0;
+  transform: translate3d(0, calc(22px * var(--ba-motion)), 0);
+  transition:
+    opacity 0.62s var(--ba-ease-out) var(--ba-reveal-delay, 0s),
+    transform 0.62s var(--ba-ease-out) var(--ba-reveal-delay, 0s);
+  will-change: opacity, transform;
+}
+
+.ba-reveal.is-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+.ba-reveal-left  { transform: translate3d(calc(-28px * var(--ba-motion)), 0, 0); }
+.ba-reveal-right { transform: translate3d(calc(28px * var(--ba-motion)), 0, 0); }
+.ba-reveal-zoom  { transform: scale(calc(1 - 0.06 * var(--ba-motion))); }
+
+.ba-reveal-left.is-in,
+.ba-reveal-right.is-in { transform: translate3d(0, 0, 0); }
+.ba-reveal-zoom.is-in  { transform: scale(1); }
+
+/* ── Interactive surfaces ──────────────────────────────────────────────
+   `.ba-lift` is the standard card hover: a small rise plus a deeper shadow.
+   Transform and box-shadow only, so it never triggers layout. */
+.ba-lift {
+  transition:
+    transform 0.34s var(--ba-ease-out),
+    box-shadow 0.34s var(--ba-ease-out),
+    border-color 0.24s ease;
+  will-change: transform;
+}
+
+.ba-lift:hover {
+  transform: translate3d(0, calc(-6px * var(--ba-motion)), 0);
+}
+
+.ba-lift:active {
+  transform: translate3d(0, -2px, 0) scale(0.995);
+}
+
+/* Pressable buttons — a crisp tactile squash on pointer-down. */
+.ba-press {
+  transition: transform 0.16s var(--ba-ease-out), box-shadow 0.24s var(--ba-ease-out),
+    background-color 0.2s ease, color 0.2s ease;
+}
+
+.ba-press:active:not(:disabled) {
+  transform: scale(0.965);
+}
+
+/* ── Magnetic border glow ─────────────────────────────────────────────
+   A radial highlight that follows the cursor. `--mx`/`--my` are written by
+   the `useSpotlight` hook. Purely visual: pointer-events stay off. */
+.ba-spotlight {
+  position: relative;
+  isolation: isolate;
+}
+
+.ba-spotlight::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  background: radial-gradient(
+    340px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(200, 164, 21, 0.16),
+    transparent 62%
+  );
+}
+
+.ba-spotlight:hover::before {
+  opacity: 1;
+}
+
+/* ── Shine sweep ─────────────────────────────────────────────────────
+   A diagonal gloss that crosses the element once on hover. Used on product
+   images and the primary CTA. */
+.ba-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.ba-shine::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -140%;
+  width: 60%;
+  height: 100%;
+  transform: skewX(-22deg);
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.42),
+    transparent
+  );
+}
+
+.ba-shine:hover::after {
+  transition: left 0.75s var(--ba-ease-out);
+  left: 160%;
+}
+
+/* ── Animated gradient text ───────────────────────────────────────── */
+.ba-gold-text {
+  background: linear-gradient(
+    110deg,
+    var(--ba-gold-600) 0%,
+    var(--ba-gold-300) 42%,
+    #fff6cf 50%,
+    var(--ba-gold-300) 58%,
+    var(--ba-gold-600) 100%
+  );
+  background-size: 220% auto;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: ba-sheen-bg 5s linear infinite;
+}
+
+@keyframes ba-sheen-bg {
+  from { background-position: 200% 50%; }
+  to   { background-position: -200% 50%; }
+}
+
+/* ── Animated underline for links ─────────────────────────────────── */
+.ba-underline {
+  position: relative;
+}
+
+.ba-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  background: var(--ba-gold);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.32s var(--ba-ease-out);
+}
+
+.ba-underline:hover::after,
+.ba-underline[aria-current="page"]::after {
+  transform: scaleX(1);
+}
+
+/* ── Skeleton shimmer ─────────────────────────────────────────────── */
+.ba-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--ba-ink-100);
+}
+
+.ba-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.72),
+    transparent
+  );
+  animation: ba-skeleton-sweep 1.5s ease-in-out infinite;
+}
+
+@keyframes ba-skeleton-sweep {
+  to { transform: translateX(100%); }
+}
+
+/* ── Ambient background blobs (hero) ─────────────────────────────── */
+.ba-blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(64px);
+  opacity: 0.5;
+  pointer-events: none;
+  animation: ba-blob-drift var(--ba-blob-dur, 20s) ease-in-out infinite;
+}
+
+@keyframes ba-blob-drift {
+  0%,
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%  { transform: translate3d(26px, -32px, 0) scale(1.08); }
+  66%  { transform: translate3d(-20px, 22px, 0) scale(0.94); }
+}
+
+/* Faint engineering grid — adds depth to flat dark sections. */
+.ba-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+.ba-grid-bg-light {
+  background-image:
+    linear-gradient(to right, rgba(16, 15, 10, 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(16, 15, 10, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* Radial vignette that keeps text legible over busy imagery. */
+.ba-vignette::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% 0%, transparent 35%, rgba(16, 15, 10, 0.55) 100%);
+}
+
+/* ── Status dot with expanding ring ──────────────────────────────── */
+.ba-pulse-dot {
+  position: relative;
+}
+
+.ba-pulse-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  animation: ba-pulse-ring 1.9s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ba-pulse-ring {
+  0%        { transform: scale(0.85); opacity: 0.65; }
+  80%, 100% { transform: scale(2.2);  opacity: 0; }
+}
+
+/* ── Notification bell: arrival shake ────────────────────────────────────
+   Played once when a notification lands, so a number quietly changing from 2
+   to 3 in the corner is not the only cue. Rotation only — the icon never
+   changes size or position, so nothing around it reflows. */
+@keyframes ba-bell-ring {
+  0%, 100% { transform: rotate(0deg); }
+  10%      { transform: rotate(-13deg); }
+  22%      { transform: rotate(11deg); }
+  34%      { transform: rotate(-8deg); }
+  46%      { transform: rotate(6deg); }
+  58%      { transform: rotate(-3deg); }
+  70%      { transform: rotate(2deg); }
+}
+
+.ba-bell-ring {
+  /* Pivot at the crown, the way a real bell hangs. */
+  transform-origin: 50% 15%;
+  animation: ba-bell-ring 0.9s var(--ba-ease-out) 1;
+}
+
+/* One-shot gold wash behind a row that just arrived, so the eye finds it in a
+   list the user may already have scrolled. Deliberately no `fill-mode`: with
+   `both` the final `transparent` would keep winning over `:hover` forever. */
+@keyframes ba-flash-gold {
+  from { background-color: rgba(200, 164, 21, 0.18); }
+  to   { background-color: transparent; }
+}
+
+.ba-flash-gold {
+  animation: ba-flash-gold 1.8s var(--ba-ease-out);
+}
+
+/* ── Scroll-hint mouse indicator ─────────────────────────────────── */
+@keyframes ba-scroll-hint {
+  0%        { transform: translateY(0);   opacity: 0; }
+  35%       { opacity: 1; }
+  70%, 100% { transform: translateY(12px); opacity: 0; }
+}
+
+.ba-scroll-hint {
+  animation: ba-scroll-hint 1.9s var(--ba-ease-out) infinite;
+}
+
+/* ── Route transition ───────────────────────────────────────────── */
+@keyframes ba-page-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+.ba-page-in {
+  animation: ba-page-in 0.42s var(--ba-ease-out) both;
+}
+
+/* ── Top scroll-progress bar ─────────────────────────────────────── */
+.ba-progress {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 100;
+  height: 3px;
+  transform-origin: 0 50%;
+  background: linear-gradient(90deg, var(--ba-gold-600), var(--ba-gold-300), var(--ba-gold));
+  box-shadow: 0 0 12px rgba(200, 164, 21, 0.55);
+}
+
+/* ── Auto-scrolling marquee carousel ─────────────────────────────────────
+   Pure CSS so it keeps running without JS timers or re-renders.
+   The track holds the item list twice; translating by exactly -50% lands on
+   the start of the duplicate, which makes the loop seamless. */
+@keyframes ba-marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(-50%, 0, 0); }
+}
+
+.ba-marquee {
+  position: relative;
+  overflow: hidden;
+  /* Fades the items in/out at both edges instead of cutting them abruptly. */
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+          mask-image: linear-gradient(to right, transparent, #000 6%, #000 94%, transparent);
+}
+
+.ba-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: ba-marquee var(--ba-marquee-duration, 36s) linear infinite;
+  will-change: transform;
+}
+
+/* Pause on hover / keyboard focus so users can read or click an item. */
+.ba-marquee:hover .ba-marquee-track,
+.ba-marquee:focus-within .ba-marquee-track {
+  animation-play-state: paused;
+}
+
+.ba-marquee-reverse .ba-marquee-track {
+  animation-direction: reverse;
+}
+
+/* The spacing is a per-item margin rather than a flex `gap`: with `gap` the
+   track measures 24w + 23g, so -50% lands half a gap off and the loop visibly
+   jumps. With margin-right every item is (w + g) wide and -50% is exact. */
+.ba-marquee-item {
+  flex: 0 0 auto;
+  width: var(--ba-marquee-item, 9.5rem);
+  margin-right: var(--ba-marquee-gap, 1.25rem);
+}
+
+@media (max-width: 640px) {
+  .ba-marquee-item {
+    width: var(--ba-marquee-item-sm, 7.5rem);
+    margin-right: var(--ba-marquee-gap-sm, 0.75rem);
+  }
+}
+
+/* Respect the OS "reduce motion" setting: stop the animation and let the user
+   scroll the strip manually instead. */
+@media (prefers-reduced-motion: reduce) {
+  .ba-marquee {
+    overflow-x: auto;
+    -webkit-mask-image: none;
+            mask-image: none;
+  }
+  .ba-marquee-track {
+    animation: none;
+  }
+}
+
+/* ── Global reduced-motion escape hatch ──────────────────────────────────
+   Every decorative animation above is either driven by `--ba-motion` or is a
+   named `ba-*` keyframe, so this one block neutralises all of them without
+   breaking functional transitions (dropdowns still open, they just snap). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ba-motion: 0;
+  }
+
+  .ba-blob,
+  .ba-gold-text,
+  .ba-skeleton::after,
+  .ba-pulse-dot::after,
+  .ba-bell-ring,
+  .ba-flash-gold,
+  .ba-scroll-hint,
+  .ba-page-in,
+  .animate-float-slow,
+  .animate-float-slower,
+  .animate-sheen,
+  .animate-shimmer,
+  .animate-ping-ring,
+  .animate-spin-slow,
+  .animate-bob {
+    animation: none !important;
+  }
+
+  .ba-gold-text {
+    /* Without the sweep the clipped background would render as invisible
+       text, so fall back to a solid colour. */
+    -webkit-text-fill-color: var(--ba-gold);
+    color: var(--ba-gold);
+  }
+
+  .ba-lift:hover,
+  .ba-press:active {
+    transform: none;
+  }
+
+  .ba-shine::after {
+    display: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ── Nav dropdown entrance ───────────────────────────────────────────── */
+@keyframes ba-dropdown-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ba-dropdown {
+  animation: ba-dropdown-in 0.16s ease-out both;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.loading-banner {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 80;
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #151515;
+  color: white;
+  box-shadow: 0 14px 35px rgba(0, 0, 0, 0.28);
+}
+
+.loading-track {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.loading-track span {
+  display: block;
+  height: 100%;
+  background: var(--ba-gold);
+}
+
+.logo-button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.logo-button span {
+  display: none;
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.nav-link {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 14px;
+  color: #303030;
+  font-weight: 850;
+}
+
+.nav-link.active,
+.nav-link:hover {
+  background: #151515;
+  color: white;
+}
+
+.mobile-nav {
+  display: grid;
+  gap: 8px;
+  overflow: hidden;
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 12px 16px;
+  background: white;
+}
+
+.counter {
+  position: absolute;
+  right: -4px;
+  top: -6px;
+  display: grid;
+  height: 20px;
+  min-width: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--ba-gold);
+  padding: 0 5px;
+  color: #151515;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+@media (min-width: 640px) {
+  .logo-button span {
+    display: block;
+  }
+}
+
+.hero-section {
+  background:
+    linear-gradient(115deg, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.46)),
+    url("https://images.unsplash.com/photo-1493238792000-8113da705763?auto=format&fit=crop&w=1800&q=80") center / cover;
+}
+
+.hero-pill {
+  display: inline-flex;
+  margin-bottom: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 10px 14px;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 850;
+  backdrop-filter: blur(8px);
+}
+
+.hero-object {
+  position: relative;
+  display: grid;
+  min-height: 390px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  padding: 34px;
+  text-align: center;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.35);
+}
+
+.scanner-line {
+  position: absolute;
+  inset-inline: 24px;
+  top: 28%;
+  height: 2px;
+  background: var(--ba-gold);
+  box-shadow: 0 0 30px var(--ba-gold);
+  animation: scan 2.5s ease-in-out infinite;
+}
+
+@keyframes scan {
+  0%,
+  100% {
+    transform: translateY(-80px);
+    opacity: 0.2;
+  }
+  50% {
+    transform: translateY(120px);
+    opacity: 1;
+  }
+}
+
+.icon-button {
+  display: inline-grid;
+  height: 42px;
+  width: 42px;
+  place-items: center;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background: #fff;
+  color: #161616;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.icon-button:hover {
+  border-color: var(--ba-gold);
+  transform: translateY(-1px);
+}
+
+.icon-button.active {
+  border-color: var(--ba-gold);
+  background: #fff7dc;
+  color: #a47f14;
+}
+
+.primary-action,
+.secondary-action,
+.filter-button,
+.cart-button {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 800;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.primary-action {
+  background: var(--ba-gold);
+  color: #151515;
+  padding: 0 18px;
+  box-shadow: 0 14px 28px rgba(200, 164, 21, 0.28);
+}
+
+.primary-action:hover,
+.cart-button:hover {
+  transform: translateY(-2px);
+}
+
+.secondary-action {
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  padding: 0 18px;
+}
+
+.secondary-dark {
+  display: inline-flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #151515;
+  border-radius: 8px;
+  background: white;
+  padding: 0 18px;
+  color: #151515;
+  font-weight: 850;
+}
+
+.search-panel,
+.checkout-form,
+.summary-panel {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: white;
+  padding: 24px;
+  box-shadow: 0 18px 45px rgba(20, 20, 20, 0.08);
+}
+
+.page-shell {
+  width: min(1280px, calc(100% - 32px));
+  min-height: 62vh;
+  margin: 0 auto;
+  padding: 44px 0 60px;
+}
+
+.search-panel {
+  display: grid;
+  gap: 20px;
+}
+
+.vehicle-selector {
+  display: grid;
+  gap: 16px;
+  border: 1px solid rgba(212, 175, 55, 0.32);
+  border-radius: 8px;
+  background: #fffdf4;
+  padding: 18px;
+}
+
+.vehicle-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.vehicle-title h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.vehicle-title p {
+  margin: 2px 0 0;
+  color: #6b6250;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.vehicle-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.vehicle-grid label {
+  display: grid;
+  gap: 7px;
+}
+
+.vehicle-grid span {
+  color: #5f5f5f;
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.vehicle-grid select {
+  min-height: 48px;
+  width: 100%;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: white;
+  padding: 0 12px;
+  color: #151515;
+  font-weight: 800;
+}
+
+.vehicle-grid select:disabled {
+  background: #f2f2f2;
+  color: #888;
+}
+
+.api-warning {
+  margin: 0;
+  color: #9a3412;
+  font-size: 0.9rem;
+  font-weight: 850;
+}
+
+@media (min-width: 840px) {
+  .vehicle-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.erp-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.erp-kpi,
+.erp-panel {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 18px 45px rgba(20, 20, 20, 0.08);
+}
+
+.erp-kpi {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+}
+
+.erp-kpi span,
+.erp-panel-header p {
+  color: #a47f14;
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.erp-kpi strong {
+  color: #151515;
+  font-size: 1.9rem;
+  font-weight: 950;
+}
+
+.erp-kpi p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.erp-layout {
+  display: grid;
+  gap: 18px;
+}
+
+@media (min-width: 980px) {
+  .erp-layout {
+    grid-template-columns: minmax(0, 1fr) 360px;
+  }
+}
+
+.erp-panel {
+  min-width: 0;
+  padding: 20px;
+}
+
+.erp-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.erp-panel-header h2 {
+  margin: 4px 0 0;
+  font-size: 1.25rem;
+  font-weight: 950;
+}
+
+.erp-table-wrap {
+  overflow: auto;
+}
+
+.erp-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+.erp-table th,
+.erp-table td {
+  border-bottom: 1px solid #ececec;
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.erp-table th {
+  color: #5f5f5f;
+  font-size: 0.78rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.erp-table td {
+  color: #252525;
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.admin-search {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.admin-form {
+  display: grid;
+  gap: 13px;
+}
+
+.admin-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-form label span,
+.selected-article span {
+  color: #5f5f5f;
+  font-size: 0.76rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.admin-form input {
+  min-height: 46px;
+  width: 100%;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: white;
+  padding: 0 12px;
+  color: #151515;
+  font-weight: 800;
+}
+
+.admin-check {
+  display: flex !important;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px !important;
+}
+
+.admin-check input {
+  min-height: 18px;
+  width: 18px;
+}
+
+.selected-article {
+  display: grid;
+  gap: 6px;
+  border-radius: 8px;
+  background: #f6f7f9;
+  padding: 13px;
+}
+
+.selected-article strong {
+  overflow-wrap: anywhere;
+  color: #151515;
+  font-size: 1.05rem;
+}
+
+.selected-article p,
+.selected-article small,
+.admin-message {
+  margin: 0;
+  color: #5f5f5f;
+  line-height: 1.45;
+}
+
+.selected-article small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.admin-message {
+  border-radius: 8px;
+  background: #fff7dc;
+  padding: 11px;
+  color: #7a5800;
+  font-weight: 850;
+}
+
+.table-action {
+  min-height: 34px;
+  border: 1px solid #151515;
+  border-radius: 8px;
+  background: white;
+  padding: 0 12px;
+  color: #151515;
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.filter-groups {
+  display: grid;
+  gap: 18px;
+}
+
+.filter-groups h3 {
+  margin: 0 0 10px;
+  color: #5f5f5f;
+  font-size: 0.9rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.filter-info,
+.login-required,
+.empty-state {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 8px;
+  background: #fff8df;
+  padding: 16px;
+  margin-bottom: 18px;
+  font-weight: 800;
+}
+
+.empty-state {
+  min-height: 180px;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  color: #555;
+}
+
+.search-input {
+  display: flex;
+  min-height: 50px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  padding: 0 14px;
+}
+
+.search-input input,
+.checkout-form input,
+.checkout-form textarea {
+  width: 100%;
+  border: 0;
+  outline: 0;
+}
+
+.checkout-form input,
+.checkout-form textarea {
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.filter-button,
+.cart-button {
+  background: #151515;
+  color: white;
+  padding: 0 16px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.section-heading p {
+  margin: 0;
+  color: #a47f14;
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.section-heading h2 {
+  margin: 4px 0 0;
+  font-size: clamp(1.7rem, 3vw, 2.7rem);
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.section-heading h1 {
+  margin: 4px 0 0;
+  font-size: clamp(1.9rem, 4vw, 3.2rem);
+  font-weight: 950;
+  letter-spacing: 0;
+}
+
+.brand-carousel,
+.category-row {
+  display: flex;
+  gap: 12px;
+  overflow: auto;
+  padding-bottom: 6px;
+}
+
+.brand-carousel {
+  border-radius: 8px;
+  background: var(--ba-gold);
+  padding: 20px;
+}
+
+.brand-chip {
+  display: grid;
+  gap: 8px;
+  min-width: 170px;
+  border-radius: 8px;
+  background: white;
+  padding: 26px 20px;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 950;
+  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.12);
+}
+
+.brand-chip span {
+  display: grid;
+  height: 62px;
+  place-items: center;
+  border-radius: 999px;
+  background: #151515;
+  color: var(--ba-gold);
+  font-size: 1.15rem;
+  font-weight: 950;
+}
+
+.brand-chip strong {
+  font-size: 0.95rem;
+}
+
+.category {
+  min-height: 42px;
+  white-space: nowrap;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 999px;
+  background: white;
+  padding: 0 16px;
+  font-weight: 800;
+}
+
+.category.active {
+  border-color: #151515;
+  background: #151515;
+  color: white;
+}
+
+.product-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin-top: 24px;
+}
+
+.product-card {
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 14px 34px rgba(20, 20, 20, 0.08);
+}
+
+.product-card:hover .product-media img {
+  transform: scale(1.07);
+}
+
+.product-media {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #eceff2;
+}
+
+.product-media img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  transition: transform 400ms ease;
+}
+
+.product-media span {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  border-radius: 999px;
+  background: var(--ba-gold);
+  padding: 7px 11px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.like-button {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  display: grid;
+  height: 42px;
+  width: 42px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #151515;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.16);
+}
+
+.like-button.active {
+  background: var(--ba-gold);
+  color: #151515;
+}
+
+.stock-badge {
+  display: inline-flex;
+  margin-top: 12px;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.product-tecdoc {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  border-radius: 8px;
+  background: #f6f7f9;
+  padding: 10px;
+  color: #4b4b4b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.product-tecdoc p,
+.product-attrs {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.product-tecdoc strong {
+  color: #151515;
+}
+
+.product-attrs {
+  display: -webkit-box;
+  margin-top: 8px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  color: #666;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.stock-badge.en-stock {
+  background: #e8f8ee;
+  color: #157a35;
+}
+
+.stock-badge.epuisee {
+  background: #feecec;
+  color: #b42318;
+}
+
+.stock-badge.par-commande {
+  background: #fff4d6;
+  color: #946200;
+}
+
+.delivery-section {
+  background: #151515;
+  color: white;
+}
+
+.delivery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.delivery-card {
+  min-height: 190px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 24px;
+}
+
+.delivery-card h3 {
+  margin: 18px 0 8px;
+  font-size: 1.25rem;
+}
+
+.delivery-card p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.6;
+}
+
+.delivery-card.light {
+  background: white;
+  color: #151515;
+}
+
+.delivery-card.light p {
+  color: #646464;
+}
+
+.checkout-layout {
+  display: grid;
+  gap: 22px;
+}
+
+@media (min-width: 980px) {
+  .checkout-layout {
+    grid-template-columns: 1fr 420px;
+  }
+}
+
+.checkout-form h2,
+.summary-panel h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 950;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+  color: #5f5f5f;
+}
+
+.summary-line.strong {
+  border-top: 1px solid #e5e5e5;
+  padding-top: 14px;
+  color: #151515;
+  font-size: 1.25rem;
+  font-weight: 950;
+}
+
+.cart-mini-list {
+  display: grid;
+  gap: 8px;
+  margin: 18px 0;
+  border-radius: 8px;
+  background: #f6f7f9;
+  padding: 14px;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.auth-card {
+  display: grid;
+  width: min(440px, 100%);
+  gap: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  background: white;
+  padding: 26px;
+  box-shadow: 0 18px 45px rgba(20, 20, 20, 0.08);
+}
+
+.auth-card input {
+  min-height: 48px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  padding: 0 14px;
+}
+
+.cart-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.cart-drawer {
+  position: fixed;
+  inset-block: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  width: min(440px, 100vw);
+  flex-direction: column;
+  background: white;
+  padding: 24px;
+  box-shadow: -22px 0 50px rgba(0, 0, 0, 0.22);
+}
+
+.cart-line {
+  display: flex;
+  gap: 14px;
+  border: 1px solid #ececec;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.cart-line img {
+  height: 84px;
+  width: 84px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.cart-line h3 {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.cart-line p {
+  margin: 4px 0 0;
+  color: #a47f14;
+  font-weight: 900;
+}
+
+.cart-line button {
+  display: inline-grid;
+  height: 30px;
+  width: 30px;
+  place-items: center;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+}
+
+.footer-block {
+  background: #151515;
+  color: white;
+}
+
+.footer-block h3 {
+  margin: 0 0 14px;
+  color: var(--ba-gold);
+  font-size: 1rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.footer-block p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.footer-block button {
+  display: block;
+  border: 0;
+  background: transparent;
+  padding: 5px 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+  text-align: left;
+}
+
+.footer-block button:hover {
+  color: var(--ba-gold);
+}
+
+@media (max-width: 720px) {
+  .section-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .hero-object {
+    min-height: 320px;
+  }
+}
