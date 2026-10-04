@@ -3,9 +3,10 @@ import { Outlet, useNavigate, useLocation, Navigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   BarChart3, Building2, CalendarDays, Car, ChevronDown,
-  ClipboardList, LayoutDashboard, LogOut, Menu, Package,
-  Search, Settings, ShoppingCart, Store, Tag, Truck, Users,
+  ClipboardList, FileText, LayoutDashboard, LogOut, Menu, Package,
+  Receipt, Search, Settings, ShoppingCart, Store, Tag, Truck, Users,
   Warehouse, Wrench, X,
+  BookOpen, Landmark, Wallet, UserCog, PackageCheck,
 } from "lucide-react"
 import { useAuth } from "../../contexts/AuthContext"
 import { useTranslation } from "react-i18next"
@@ -48,6 +49,15 @@ const P_INVENTORY  = ['INVENTORY_VIEW', 'INVENTORY_MANAGE', 'STOCK_TRANSFER', 'P
 const P_SERVICES   = ['SERVICE_VIEW', 'SERVICE_MANAGE']
 const P_BRANCHES   = ['BRANCH_VIEW', 'BRANCH_MANAGE']
 const P_USERS      = ['USER_VIEW', 'USER_MANAGE']
+const P_QUOTES     = ['QUOTE_VIEW', 'QUOTE_MANAGE']
+const P_INVOICES   = ['INVOICE_VIEW', 'INVOICE_MANAGE']
+const P_PURCHASE   = ['PURCHASE_ORDER_VIEW', 'PURCHASE_ORDER_CREATE', 'PURCHASE_ORDER_MANAGE']
+const P_DELIVERY   = ['DELIVERY_NOTE_VIEW', 'DELIVERY_NOTE_MANAGE']
+const P_PAYMENTS   = ['PAYMENT_VIEW', 'PAYMENT_MANAGE']
+const P_ACCOUNTING = ['ACCOUNTING_VIEW', 'ACCOUNTING_MANAGE', 'JOURNAL_VIEW', 'LEDGER_VIEW']
+const P_TAX        = ['TAX_VIEW', 'TAX_MANAGE', 'TAX_DECLARE']
+const P_TREASURY   = ['TREASURY_VIEW', 'TREASURY_MANAGE', 'CASH_MANAGE', 'BANK_MANAGE']
+const P_HR         = ['HR_VIEW', 'HR_MANAGE', 'PAYROLL_VIEW', 'PAYROLL_MANAGE']
 
 /** Union of every item permission, used as the section-level gate. */
 const union = (...groups: string[][]) => Array.from(new Set(groups.flat()))
@@ -86,6 +96,43 @@ const ALL_NAV: NavSection[] = [
       { labelKey: "inventory",  path: "/admin/inventory",  icon: Warehouse, roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER','STOCK_MANAGER'], permissions: P_INVENTORY },
       { labelKey: "suppliers",  path: "/admin/suppliers",  icon: Truck, roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER','STOCK_MANAGER'], permissions: P_INVENTORY },
       { labelKey: "services",   path: "/admin/services",   icon: ClipboardList, roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER'], permissions: P_SERVICES },
+    ],
+  },
+  {
+    labelKey: "gestionCommerciale",
+    roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER','ACCOUNTANT'],
+    permissions: union(P_QUOTES, P_INVOICES, P_PURCHASE, P_DELIVERY, P_PAYMENTS),
+    items: [
+      { labelKey: "quotes",         path: "/admin/quotes",          icon: FileText, roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER','ACCOUNTANT'], permissions: P_QUOTES },
+      { labelKey: "invoices",       path: "/admin/invoices",        icon: Receipt, roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER','ACCOUNTANT'], permissions: P_INVOICES },
+      { labelKey: "purchaseOrders", path: "/admin/purchase-orders", icon: ClipboardList, roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER','STOCK_MANAGER'], permissions: P_PURCHASE },
+      { labelKey: "deliveryNotes",  path: "/admin/delivery-notes",  icon: PackageCheck, roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER','STOCK_MANAGER'], permissions: P_DELIVERY },
+      { labelKey: "payments",       path: "/admin/payments",        icon: Wallet, roles: ['SUPER_ADMIN','BRANCH_ADMIN','MANAGER','ACCOUNTANT'], permissions: P_PAYMENTS },
+    ],
+  },
+  {
+    labelKey: "comptabiliteFiscalite",
+    roles: ['SUPER_ADMIN','BRANCH_ADMIN','ACCOUNTANT'],
+    permissions: union(P_ACCOUNTING, P_TAX),
+    items: [
+      { labelKey: "accounting", path: "/admin/accounting", icon: BookOpen, roles: ['SUPER_ADMIN','BRANCH_ADMIN','ACCOUNTANT'], permissions: P_ACCOUNTING },
+      { labelKey: "tax",        path: "/admin/tax",        icon: Landmark, roles: ['SUPER_ADMIN','BRANCH_ADMIN','ACCOUNTANT'], permissions: P_TAX },
+    ],
+  },
+  {
+    labelKey: "tresorerie",
+    roles: ['SUPER_ADMIN','BRANCH_ADMIN','ACCOUNTANT'],
+    permissions: P_TREASURY,
+    items: [
+      { labelKey: "treasury", path: "/admin/treasury", icon: Wallet, roles: ['SUPER_ADMIN','BRANCH_ADMIN','ACCOUNTANT'], permissions: P_TREASURY },
+    ],
+  },
+  {
+    labelKey: "rh",
+    roles: ['SUPER_ADMIN','BRANCH_ADMIN','ACCOUNTANT'],
+    permissions: P_HR,
+    items: [
+      { labelKey: "hr", path: "/admin/hr", icon: UserCog, roles: ['SUPER_ADMIN','BRANCH_ADMIN','ACCOUNTANT'], permissions: P_HR },
     ],
   },
   {
@@ -158,46 +205,65 @@ export default function AdminLayout() {
     navigate('/login')
   }
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ collapsed = false }: { collapsed?: boolean }) => (
     <div className="flex h-full flex-col bg-white">
-      {/* Logo */}
-      <div className="flex h-20 items-center gap-3 border-b border-ink-100 px-5">
-        <img
-          src="/images/bouslamaauto.png"
-          alt="Bouslama Auto"
-          className="h-12 w-auto object-contain"
-          onError={(e) => { e.currentTarget.style.display = 'none' }}
-        />
+      {/* Logo — hidden entirely when collapsed to keep the rail clean. */}
+      <div className={`flex h-20 items-center gap-3 border-b border-ink-100 transition-all duration-300 ease-out-expo ${collapsed ? 'justify-center px-2' : 'px-5'}`}>
+        {!collapsed && (
+          <img
+            src="/images/bouslamaauto.png"
+            alt="Bouslama Auto"
+            className="h-12 w-auto object-contain"
+            onError={(e) => { e.currentTarget.style.display = 'none' }}
+          />
+        )}
       </div>
 
-      {/* Role badge */}
-      <div className="border-b border-ink-100 px-5 py-3">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-50 px-3 py-1 text-[11px] font-bold text-gold-700">
-          <span className="ba-pulse-dot h-1.5 w-1.5 rounded-full bg-gold-500" />
-          {roleLabel}
-        </span>
-      </div>
+      {/* Role badge — hidden entirely when collapsed. */}
+      {!collapsed && (
+        <div className="border-b border-ink-100 px-5 py-3">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-gold-50 px-3 py-1 text-[11px] font-bold text-gold-700">
+            <span className="ba-pulse-dot h-1.5 w-1.5 shrink-0 rounded-full bg-gold-500" />
+            {roleLabel}
+          </span>
+        </div>
+      )}
 
       {/* Nav */}
-      <nav className="flex-1 space-y-5 overflow-y-auto p-4">
+      <nav className={`flex-1 space-y-5 overflow-y-auto overflow-x-hidden py-4 transition-all duration-300 ease-out-expo ${collapsed ? 'px-2' : 'p-4'}`}>
         {navSections.map((section) => (
           <div key={section.labelKey}>
-            <span className="mb-2 block px-3 text-[10px] font-black uppercase tracking-widest text-ink-300">
-              {t(`adminLayout.sections.${section.labelKey}`)}
-            </span>
+            <AnimatePresence initial={false}>
+              {!collapsed && (
+                <motion.span
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  className="mb-2 block overflow-hidden whitespace-nowrap px-3 text-[10px] font-black uppercase tracking-widest text-ink-300"
+                >
+                  {t(`adminLayout.sections.${section.labelKey}`)}
+                </motion.span>
+              )}
+            </AnimatePresence>
+            {collapsed && <span aria-hidden className="mx-auto mb-2 block h-px w-6 rounded-full bg-ink-100" />}
             <div className="space-y-0.5">
               {section.items.map((item) => {
                 const Icon   = item.icon
                 const active = isActive(item.path, !!item.exact)
+                const label  = t(`adminLayout.nav.${item.labelKey}`)
                 return (
                   <button
                     key={item.path}
                     onClick={() => handleNav(item.path)}
                     aria-current={active ? 'page' : undefined}
-                    className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3 py-2.5 text-sm font-bold transition-all duration-300 ease-out-expo ${
+                    title={collapsed ? label : undefined}
+                    className={`group relative flex w-full items-center overflow-hidden rounded-xl py-2.5 text-sm font-bold transition-all duration-300 ease-out-expo ${
+                      collapsed ? 'justify-center px-0' : 'gap-3 px-3'
+                    } ${
                       active
                         ? 'bg-gold-500 text-ink-900 shadow-gold-md'
-                        : 'text-ink-500 hover:translate-x-0.5 hover:bg-gold-50 hover:text-gold-700'
+                        : 'text-ink-500 hover:bg-gold-50 hover:text-gold-700 ' + (collapsed ? '' : 'hover:translate-x-0.5')
                     }`}
                   >
                     {/* Active rail — a subtle marker that reads even when the
@@ -212,7 +278,19 @@ export default function AdminLayout() {
                       size={17}
                       className={`shrink-0 transition-transform duration-300 ease-out-back ${active ? '' : 'group-hover:scale-110'}`}
                     />
-                    {t(`adminLayout.nav.${item.labelKey}`)}
+                    <AnimatePresence initial={false}>
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: 'auto' }}
+                          exit={{ opacity: 0, width: 0 }}
+                          transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                          className="overflow-hidden whitespace-nowrap"
+                        >
+                          {label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </button>
                 )
               })}
@@ -222,13 +300,28 @@ export default function AdminLayout() {
       </nav>
 
       {/* Bottom: go to store */}
-      <div className="border-t border-ink-100 p-4">
+      <div className={`border-t border-ink-100 transition-all duration-300 ease-out-expo ${collapsed ? 'px-2 py-4' : 'p-4'}`}>
         <button
           onClick={() => navigate('/')}
-          className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-bold text-ink-500 transition-all duration-300 ease-out-expo hover:bg-gold-50 hover:text-gold-700"
+          title={collapsed ? t('adminLayout.viewStore') : undefined}
+          className={`group flex w-full items-center rounded-xl py-2.5 text-sm font-bold text-ink-500 transition-all duration-300 ease-out-expo hover:bg-gold-50 hover:text-gold-700 ${
+            collapsed ? 'justify-center px-0' : 'gap-3 px-3'
+          }`}
         >
           <Store size={17} className="shrink-0 transition-transform duration-300 ease-out-back group-hover:scale-110" />
-          {t('adminLayout.viewStore')}
+          <AnimatePresence initial={false}>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="overflow-hidden whitespace-nowrap"
+              >
+                {t('adminLayout.viewStore')}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
       </div>
     </div>
@@ -238,12 +331,14 @@ export default function AdminLayout() {
     <div className="flex min-h-screen bg-gray-50 text-ink-900">
 
       {/* ── Desktop Sidebar ─────────────────────────────────────────────── */}
+      {/* Collapsing shrinks the rail to icon-only (w-20) instead of hiding it,
+          so the buttons stay reachable and their labels animate away. */}
       <aside
         className={`fixed inset-y-0 left-0 z-30 hidden border-r border-ink-100 bg-white shadow-elev-1 transition-all duration-300 ease-out-expo lg:block ${
-          sidebarOpen ? 'w-64' : 'w-0 overflow-hidden'
+          sidebarOpen ? 'w-64' : 'w-20'
         }`}
       >
-        <SidebarContent />
+        <SidebarContent collapsed={!sidebarOpen} />
       </aside>
 
       {/* ── Mobile Sidebar Overlay ──────────────────────────────────────── */}
@@ -280,7 +375,7 @@ export default function AdminLayout() {
       </AnimatePresence>
 
       {/* ── Main Content ────────────────────────────────────────────────── */}
-      <div className={`flex min-h-screen flex-1 flex-col transition-all duration-300 ease-out-expo ${sidebarOpen ? 'lg:pl-64' : ''}`}>
+      <div className={`flex min-h-screen flex-1 flex-col transition-all duration-300 ease-out-expo ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-20'}`}>
 
         {/* Top Header */}
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-ink-100 bg-white/85 px-3 shadow-elev-1 backdrop-blur-xl sm:px-5">

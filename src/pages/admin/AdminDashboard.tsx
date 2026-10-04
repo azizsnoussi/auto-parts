@@ -28,7 +28,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useReveal } from '../../hooks/useAnimations'
-import { analyticsApi } from '../../lib/api'
+import { analyticsApi, erpAnalyticsApi } from '../../lib/api'
 import {
   CARD, RefreshButton, StatusPill, TABLE_MIN,
   DateRangeFilter, isDateRangeActive, type DateRange,
@@ -37,7 +37,9 @@ import {
   AnalyticsDrilldowns, Delta, ProgressRing, RevenueBarChart, RevenueLegend,
   statusTone,
 } from './analytics-charts'
+import { ErpKpiStrip } from './erp-analytics'
 import {
+  type ErpOverview,
   type KpiSummary, type OrderBrief, type Pct, type RevenueSeries,
   STATUS_FR, fmtDate, fmtInt, fmtMoney, fmtPct, toIsoDate, trailingRange,
 } from './analytics-types'
@@ -119,16 +121,22 @@ export default function AdminDashboard() {
     queryKey: ['analytics', 'orders', from, to, 8],
     queryFn: () => analyticsApi.orders({ from, to, limit: 8 }),
   })
+  const erpQuery = useQuery({
+    queryKey: ['analytics', 'erp', 'overview', from, to],
+    queryFn: () => erpAnalyticsApi.overview({ from, to }),
+  })
 
   const k: KpiSummary | undefined = kpiQuery.data?.data?.data
   const series: RevenueSeries | undefined = revenueQuery.data?.data?.data
   const orders: OrderBrief[] = ordersQuery.data?.data?.data ?? []
+  const erp: ErpOverview | undefined = erpQuery.data?.data?.data
 
-  const busy = kpiQuery.isFetching || revenueQuery.isFetching || ordersQuery.isFetching
+  const busy = kpiQuery.isFetching || revenueQuery.isFetching || ordersQuery.isFetching || erpQuery.isFetching
   const refreshAll = () => {
     kpiQuery.refetch()
     revenueQuery.refetch()
     ordersQuery.refetch()
+    erpQuery.refetch()
   }
 
   const failed = kpiQuery.isError || revenueQuery.isError || ordersQuery.isError
@@ -220,6 +228,16 @@ export default function AdminDashboard() {
             loading={kpiQuery.isLoading}
           />
         ))}
+      </div>
+
+      {/* ERP module KPIs — treasury, payments, purchasing, tax, payroll */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="h-1 w-10 rounded-full bg-gradient-to-r from-gold-500 to-gold-300" />
+          <h2 className="text-lg font-black text-ink-900">{t('adminDashboard.erp.title')}</h2>
+          <p className="hidden text-xs font-medium text-ink-400 sm:block">{t('adminDashboard.erp.hint')}</p>
+        </div>
+        <ErpKpiStrip ov={erp} loading={erpQuery.isLoading} />
       </div>
 
       {/* Charts row */}

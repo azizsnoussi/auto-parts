@@ -10,8 +10,9 @@
  * `tailwind.config.ts`, `ba-*` animation classes in `src/styles.css`).
  */
 import type { ComponentType, FormEvent, ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { CalendarDays, FilterX, Loader2, RefreshCw, Search, ToggleLeft, ToggleRight, X } from 'lucide-react'
+import { Check, ChevronDown, CalendarDays, FilterX, Loader2, Plus, RefreshCw, Search, ToggleLeft, ToggleRight, Trash2, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useReveal, useCountUp } from '../../hooks/useAnimations'
 
@@ -40,6 +41,54 @@ export const BTN_GHOST =
 export const BTN_DANGER =
   'ba-press inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 ' +
   'transition-all duration-300 ease-out-expo hover:-translate-y-0.5 hover:bg-red-100 disabled:translate-y-0 disabled:opacity-50'
+
+// ── per-row table actions ────────────────────────────────────────────────────
+//
+// Before this block each admin table hand-rolled its own action cell: some used
+// `p-2` icon buttons, some `h-8 w-8`, wrappers alternated between `flex` and
+// `inline-flex` with `gap-1`, and column alignment drifted. The result was
+// visibly uneven spacing from one page to the next. These tokens make every
+// action cell identical: a right-aligned cell, a fixed-gap wrapper and buttons
+// that all occupy the same 32px square (icon) or 32px-tall pill (labelled).
+
+/** `<td>` wrapper for the trailing action column. Right-aligned, no wrap. */
+export const ROW_ACTIONS_CELL = 'whitespace-nowrap px-4 py-3 text-right'
+
+/** Flex wrapper that keeps every button the same distance apart, right-aligned. */
+export const ROW_ACTIONS = 'inline-flex items-center justify-end gap-1'
+
+/**
+ * Square (32×32) icon-only row button. Pass a tone for the hover colour so a
+ * destructive action still reads as destructive without breaking the grid.
+ */
+export function rowActionBtn(
+  tone: 'neutral' | 'gold' | 'blue' | 'emerald' | 'red' = 'neutral',
+): string {
+  const tones: Record<string, string> = {
+    neutral: 'text-ink-500 hover:bg-ink-100 hover:text-ink-900',
+    gold:    'text-ink-500 hover:bg-gold-50 hover:text-gold-700',
+    blue:    'text-ink-500 hover:bg-blue-50 hover:text-blue-700',
+    emerald: 'text-ink-500 hover:bg-emerald-50 hover:text-emerald-700',
+    red:     'text-ink-500 hover:bg-red-50 hover:text-red-600',
+  }
+  return `ba-press inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition ${tones[tone]}`
+}
+
+/**
+ * 32px-tall labelled row button (icon + short label). Same height as
+ * {@link rowActionBtn} so a mixed row stays aligned.
+ */
+export function rowActionLabelBtn(
+  tone: 'gold' | 'blue' | 'emerald' | 'red' = 'gold',
+): string {
+  const tones: Record<string, string> = {
+    gold:    'bg-gold-500/10 text-gold-700 hover:bg-gold-500/20',
+    blue:    'bg-blue-50 text-blue-700 hover:bg-blue-100',
+    emerald: 'bg-emerald-500/10 text-emerald-700 hover:bg-emerald-500/20',
+    red:     'bg-red-50 text-red-600 hover:bg-red-100',
+  }
+  return `ba-press inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-semibold transition ${tones[tone]}`
+}
 
 /** Panel / card surface. */
 export const CARD =
@@ -703,5 +752,416 @@ export function ConfirmDialog({
         </div>
       )}
     </AnimatePresence>
+  )
+}
+
+// ── strict searchable pickers ────────────────────────────────────────────────
+//
+// The ERP create modals used to accept a free-typed client / supplier name via
+// a `<datalist>` (suggestions but no enforcement) or a plain `<input>`. The
+// business rule is now "choose an existing party, never type one by hand", so
+// these components render a strict dropdown: the value is always one of the
+// supplied options, type-to-filter narrows the list, and there is no way to
+// commit arbitrary text. `value` is the selected option id (or null).
+
+export type PickerOption = { id: number; label: string; sub?: string }
+
+/**
+ * Strict, searchable single-select. No free text is ever accepted — the caller
+ * receives one of the supplied option ids or `null`. Type to filter; click (or
+ * Enter) to select. Closes on outside click / Escape.
+ */
+export function EntityPicker({
+  options,
+  value,
+  onChange,
+  placeholder,
+  emptyLabel,
+  disabled = false,
+  loading = false,
+  autoFocus = false,
+}: {
+  options: PickerOption[]
+  value: number | null
+  onChange: (id: number | null, option: PickerOption | null) => void
+  placeholder?: string
+  emptyLabel?: string
+  disabled?: boolean
+  loading?: boolean
+  autoFocus?: boolean
+}) {
+  const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const [active, setActive] = useState(0)
+  const rootRef = useRef<HTMLDivElement | null>(null)
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  const selected = useMemo(
+    () => options.find((o) => o.id === value) ?? null,
+    [options, value],
+  )
+
+  const filtered = useMemo(() => {
+    const term = query.trim().toLowerCase()
+    if (!term) return options
+    return options.filter(
+      (o) =>
+        o.label.toLowerCase().includes(term) ||
+        (o.sub ? o.sub.toLowerCase().includes(term) : false),
+    )
+  }, [options, query])
+
+  useEffect(() => {
+    if (!open) return
+    function onDocClick(e: MouseEvent) {
+      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    return () => document.removeEventListener('mousedown', onDocClick)
+  }, [open])
+
+  useEffect(() => {
+    if (open) {
+      setActive(0)
+      // Focus the search field when the menu opens.
+      requestAnimationFrame(() => inputRef.current?.focus())
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (autoFocus && !disabled) setOpen(true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const commit = (opt: PickerOption) => {
+    onChange(opt.id, opt)
+    setOpen(false)
+    setQuery('')
+  }
+
+  const onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActive((a) => Math.min(filtered.length - 1, a + 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActive((a) => Math.max(0, a - 1))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const opt = filtered[active]
+      if (opt) commit(opt)
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      setOpen(false)
+      setQuery('')
+    }
+  }
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen((o) => !o)}
+        className={`flex w-full items-center justify-between gap-2 rounded-xl border px-4 py-2.5 text-left text-sm font-semibold transition-all duration-300 ease-out-expo
+          ${open ? 'border-gold-500 bg-white shadow-gold-sm' : 'border-ink-100 bg-gray-50'}
+          ${disabled ? 'cursor-not-allowed opacity-60' : 'hover:border-gold-400'}`}
+      >
+        <span className={selected ? 'truncate text-ink-900' : 'truncate text-ink-300'}>
+          {selected
+            ? selected.label
+            : placeholder ?? t('adminShared.picker.placeholder', 'Sélectionner…')}
+        </span>
+        <ChevronDown size={16} className={`shrink-0 text-ink-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-ink-100 bg-white shadow-elev-3"
+          >
+            <div className="flex items-center gap-2 border-b border-ink-100 px-3 py-2">
+              <Search size={14} className="shrink-0 text-ink-300" />
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value)
+                  setActive(0)
+                }}
+                onKeyDown={onKeyDown}
+                placeholder={t('adminShared.picker.search', 'Rechercher…')}
+                className="flex-1 bg-transparent text-sm font-semibold text-ink-900 placeholder-ink-300 focus:outline-none"
+              />
+            </div>
+            <ul className="max-h-60 overflow-y-auto py-1">
+              {loading ? (
+                <li className="flex items-center gap-2 px-3 py-2 text-sm text-ink-400">
+                  <Loader2 size={14} className="animate-spin" />
+                  {t('adminShared.loading', 'Chargement…')}
+                </li>
+              ) : filtered.length === 0 ? (
+                <li className="px-3 py-3 text-center text-sm text-ink-400">
+                  {emptyLabel ?? t('adminShared.picker.empty', 'Aucun résultat')}
+                </li>
+              ) : (
+                filtered.map((o, i) => {
+                  const isSel = o.id === value
+                  const isActive = i === active
+                  return (
+                    <li key={o.id}>
+                      <button
+                        type="button"
+                        onMouseEnter={() => setActive(i)}
+                        onClick={() => commit(o)}
+                        className={`flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition
+                          ${isActive ? 'bg-gold-50' : ''}
+                          ${isSel ? 'font-bold text-gold-700' : 'font-medium text-ink-800'}`}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate">{o.label}</span>
+                          {o.sub && <span className="block truncate text-xs text-ink-400">{o.sub}</span>}
+                        </span>
+                        {isSel && <Check size={15} className="shrink-0 text-gold-600" />}
+                      </button>
+                    </li>
+                  )
+                })
+              )}
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+// ── ERP line items editor ────────────────────────────────────────────────────
+//
+// Shared line-item builder for delivery notes / purchase orders. Each line can
+// be sourced from the product catalogue (via the picker) or typed as a free
+// label, then given a quantity and unit price. The parent owns the array; this
+// component only renders + mutates it through `onChange`.
+
+export type LineItem = {
+  /** Product id when the line was picked from the product catalogue; null otherwise. */
+  productId: number | null
+  /** Service id when the line was picked from the service catalogue; null otherwise. */
+  serviceId?: number | null
+  /** What the line represents. Defaults to 'product' for older callers. */
+  kind?: 'product' | 'service'
+  label: string
+  qty: number
+  unitPrice: number
+}
+
+export const EMPTY_LINE: LineItem = { productId: null, serviceId: null, kind: 'product', label: '', qty: 1, unitPrice: 0 }
+
+/** A catalogue entry offered to the line-item picker (carries a unit price). */
+export type ProductPickOption = { id: number; label: string; price: number; sub?: string }
+
+/**
+ * Editable list of {@link LineItem}s with an "add line" button.
+ *
+ * `productOptions` enables the product-catalogue picker; `serviceOptions`
+ * enables the service-catalogue picker. When BOTH are supplied each row shows a
+ * small Produit / Service toggle so a single document (facture, devis,
+ * commande, bon de livraison) can mix goods and services. Picking a catalogue
+ * entry fills the label and unit price; a row can still hold a free label when
+ * nothing is chosen. `money` formats the per-line total.
+ */
+export function LineItemsEditor({
+  lines,
+  onChange,
+  productOptions = [],
+  serviceOptions = [],
+  productsLoading = false,
+  money,
+}: {
+  lines: LineItem[]
+  onChange: (lines: LineItem[]) => void
+  productOptions?: ProductPickOption[]
+  serviceOptions?: ProductPickOption[]
+  productsLoading?: boolean
+  money: (n: number) => string
+}) {
+  const { t } = useTranslation()
+
+  const patch = (i: number, next: Partial<LineItem>) =>
+    onChange(lines.map((l, idx) => (idx === i ? { ...l, ...next } : l)))
+
+  const removeLine = (i: number) => onChange(lines.filter((_, idx) => idx !== i))
+
+  const addLine = () => onChange([...lines, { ...EMPTY_LINE }])
+
+  const hasProducts = productOptions.length > 0
+  const hasServices = serviceOptions.length > 0
+  const showToggle = hasProducts && hasServices
+
+  const productById = useMemo(() => {
+    const m = new Map<number, ProductPickOption>()
+    for (const o of productOptions) m.set(o.id, o)
+    return m
+  }, [productOptions])
+
+  const serviceById = useMemo(() => {
+    const m = new Map<number, ProductPickOption>()
+    for (const o of serviceOptions) m.set(o.id, o)
+    return m
+  }, [serviceOptions])
+
+  const productPickerOptions = useMemo<PickerOption[]>(
+    () => productOptions.map((o) => ({ id: o.id, label: o.label, sub: o.sub })),
+    [productOptions],
+  )
+  const servicePickerOptions = useMemo<PickerOption[]>(
+    () => serviceOptions.map((o) => ({ id: o.id, label: o.label, sub: o.sub })),
+    [serviceOptions],
+  )
+
+  return (
+    <div className="space-y-3">
+      {lines.map((line, i) => {
+        const lineTotal = (Number(line.qty) || 0) * (Number(line.unitPrice) || 0)
+        const rowKind: 'product' | 'service' = line.kind ?? 'product'
+        return (
+          <div key={i} className="rounded-xl border border-ink-100 bg-gray-50 p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-[11px] font-black uppercase tracking-wider text-ink-400">
+                {t('adminShared.lineItems.line', 'Ligne {{n}}', { n: i + 1 })}
+              </span>
+              {lines.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => removeLine(i)}
+                  className="ba-press rounded-lg p-1 text-ink-400 transition hover:bg-red-50 hover:text-red-600"
+                  title={t('adminShared.lineItems.remove', 'Retirer la ligne')}
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+
+            {showToggle && (
+              <div className="mb-2 inline-flex rounded-lg bg-ink-100/70 p-0.5">
+                <button
+                  type="button"
+                  onClick={() =>
+                    patch(i, { kind: 'product', serviceId: null, productId: null, label: '', unitPrice: 0 })
+                  }
+                  className={`rounded-md px-2.5 py-1 text-[11px] font-bold transition ${
+                    rowKind === 'product' ? 'bg-white text-ink-900 shadow-elev-1' : 'text-ink-500 hover:text-ink-700'
+                  }`}
+                >
+                  {t('adminShared.lineItems.product', 'Produit')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    patch(i, { kind: 'service', productId: null, serviceId: null, label: '', unitPrice: 0 })
+                  }
+                  className={`rounded-md px-2.5 py-1 text-[11px] font-bold transition ${
+                    rowKind === 'service' ? 'bg-white text-ink-900 shadow-elev-1' : 'text-ink-500 hover:text-ink-700'
+                  }`}
+                >
+                  {t('adminShared.lineItems.service', 'Service')}
+                </button>
+              </div>
+            )}
+
+            {rowKind === 'service' && hasServices ? (
+              <div className="mb-2">
+                <EntityPicker
+                  options={servicePickerOptions}
+                  value={line.serviceId ?? null}
+                  loading={productsLoading}
+                  placeholder={t('adminShared.lineItems.pickService', 'Choisir un service du catalogue…')}
+                  onChange={(id) => {
+                    const svc = id != null ? serviceById.get(id) : undefined
+                    patch(i, {
+                      kind: 'service',
+                      serviceId: id,
+                      productId: null,
+                      label: svc ? svc.label : line.label,
+                      unitPrice: svc ? svc.price : line.unitPrice,
+                    })
+                  }}
+                />
+              </div>
+            ) : (
+              hasProducts && (
+                <div className="mb-2">
+                  <EntityPicker
+                    options={productPickerOptions}
+                    value={line.productId}
+                    loading={productsLoading}
+                    placeholder={t('adminShared.lineItems.pickProduct', 'Choisir un produit du catalogue…')}
+                    onChange={(id) => {
+                      const prod = id != null ? productById.get(id) : undefined
+                      patch(i, {
+                        kind: 'product',
+                        productId: id,
+                        serviceId: null,
+                        label: prod ? prod.label : line.label,
+                        unitPrice: prod ? prod.price : line.unitPrice,
+                      })
+                    }}
+                  />
+                </div>
+              )
+            )}
+
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_auto_auto]">
+              <input
+                className={INPUT}
+                value={line.label}
+                onChange={(e) => patch(i, { label: e.target.value })}
+                placeholder={t('adminShared.lineItems.label', 'Désignation')}
+              />
+              <input
+                type="number"
+                min="0"
+                step="1"
+                className={`${INPUT} sm:w-24`}
+                value={line.qty}
+                onChange={(e) => patch(i, { qty: Number(e.target.value) || 0 })}
+                placeholder={t('adminShared.lineItems.qty', 'Qté')}
+              />
+              <input
+                type="number"
+                min="0"
+                step="0.001"
+                className={`${INPUT} sm:w-32`}
+                value={line.unitPrice}
+                onChange={(e) => patch(i, { unitPrice: Number(e.target.value) || 0 })}
+                placeholder={t('adminShared.lineItems.unitPrice', 'P.U. HT')}
+              />
+            </div>
+
+            <div className="mt-2 text-right text-xs font-semibold text-ink-500">
+              {t('adminShared.lineItems.lineTotal', 'Total ligne')}: <span className="ba-nums text-ink-800">{money(lineTotal)}</span>
+            </div>
+          </div>
+        )
+      })}
+
+      <button
+        type="button"
+        onClick={addLine}
+        className={`w-full justify-center ${BTN_GHOST}`}
+      >
+        <Plus size={15} />
+        {t('adminShared.lineItems.add', 'Ajouter une ligne')}
+      </button>
+    </div>
   )
 }

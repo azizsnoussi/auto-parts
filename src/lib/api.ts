@@ -462,6 +462,29 @@ export const analyticsApi = {
   orders: (p: { from: string; to: string; limit?: number }) => API.get('/analytics/orders', { params: p }),
 };
 
+/**
+ * ERP back-office analytics — the sibling of {@link analyticsApi} for the modules
+ * the ERP added on top of the e-commerce funnel: règlements (payments), bons de
+ * commande (purchasing), bons de livraison (delivery), fiscalité (tax), trésorerie
+ * (treasury) and RH (HR).
+ *
+ * Backed by `ErpAnalyticsController` at `/api/analytics/erp/*`, guarded server-side
+ * by `AccessRules.ERP_FINANCE` (SUPER_ADMIN / BRANCH_ADMIN / MANAGER / ACCOUNTANT,
+ * or the PAYMENT / ANALYTICS / REPORT authorities). Same `from`/`to` inclusive-ISO
+ * contract, defaulting to the trailing 30 days. Amounts are `number` (2-decimal),
+ * percentages `number` 0-100.
+ */
+export const erpAnalyticsApi = {
+  /** Everything the ERP dashboard/report sections need, in one round-trip. */
+  overview: (p: { from: string; to: string }) => API.get('/analytics/erp/overview', { params: p }),
+  payments: (p: { from: string; to: string }) => API.get('/analytics/erp/payments', { params: p }),
+  purchasing: (p: { from: string; to: string }) => API.get('/analytics/erp/purchasing', { params: p }),
+  delivery: (p: { from: string; to: string }) => API.get('/analytics/erp/delivery', { params: p }),
+  tax: (p: { from: string; to: string }) => API.get('/analytics/erp/tax', { params: p }),
+  treasury: (p: { from: string; to: string }) => API.get('/analytics/erp/treasury', { params: p }),
+  hr: () => API.get('/analytics/erp/hr'),
+};
+
 // ── Users & Permissions (Admin) ───────────────────────────────────────────
 // `id` here is the account's public UUID (`AppUser.publicId`), never the
 // sequential database key — the backend no longer serialises the latter.

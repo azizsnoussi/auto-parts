@@ -15,7 +15,7 @@ import {
   PackageX, ShoppingCart, TrendingUp, Users, Wallet,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { analyticsApi } from '../../lib/api'
+import { analyticsApi, erpAnalyticsApi } from '../../lib/api'
 import {
   CARD, EmptyState, FilterChip, PageHeader, RefreshButton, StatCard,
   DateRangeFilter, EMPTY_RANGE, isDateRangeActive, type DateRange,
@@ -24,8 +24,9 @@ import {
   AnalyticsDrilldowns, CategoryDistribution, Delta, OrdersTable, ProgressRing,
   RevenueBarChart, RevenueLegend, SliceList, TopProductsTable, statusTone,
 } from './analytics-charts'
+import { ErpModulesSection } from './erp-analytics'
 import {
-  type Overview, type Pct,
+  type ErpOverview, type Overview, type Pct,
   PAYMENT_FR, STATUS_FR,
   fmtDate, fmtInt, fmtMoney, fmtPct, fmtShare, toIsoDate, trailingRange, yearRange,
 } from './analytics-types'
@@ -135,7 +136,13 @@ export default function AdminReports() {
     queryFn: () => analyticsApi.overview({ from, to, year: chartYear }),
   })
 
+  const erpQuery = useQuery({
+    queryKey: ['analytics', 'erp', 'overview', from, to],
+    queryFn: () => erpAnalyticsApi.overview({ from, to }),
+  })
+
   const ov: Overview | undefined = data?.data?.data
+  const erpOv: ErpOverview | undefined = erpQuery.data?.data?.data
   const k = ov?.kpis
   const periodLabel = customActive
     ? t('adminReports.customPeriod', { from: fmtDate(from), to: fmtDate(to) })
@@ -163,7 +170,7 @@ export default function AdminReports() {
           ))}
           {/* `presets={false}`: the chips above already are the presets. */}
           <DateRangeFilter value={customRange} onChange={setCustomRange} presets={false} />
-          <RefreshButton onClick={() => refetch()} busy={isFetching} />
+          <RefreshButton onClick={() => { refetch(); erpQuery.refetch() }} busy={isFetching || erpQuery.isFetching} />
         </div>
       </PageHeader>
 
@@ -402,6 +409,9 @@ export default function AdminReports() {
           </div>
         )}
       </div>
+
+      {/* ERP modules — payments, treasury, purchasing, delivery, tax, HR */}
+      <ErpModulesSection ov={erpOv} loading={erpQuery.isLoading} />
 
       {/* Recent orders in the window */}
       <div className={`overflow-hidden ${CARD}`}>

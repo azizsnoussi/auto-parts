@@ -31,6 +31,11 @@
   /* Set to 0 by the reduced-motion query below; decorative animations are
      multiplied by it so a single switch disables them all. */
   --ba-motion: 1;
+
+  /* Global UI scale. Acts like a permanent browser zoom so more content fits
+     on screen without the user pressing Ctrl+- each time. 1 = 100 %.
+     Set to 0.8 (80 %) or 0.75 (75 %) to zoom out. */
+  --ba-zoom: 0.8;
 }
 
 * {
@@ -47,6 +52,10 @@ html {
 
 body {
   margin: 0;
+  /* Permanent UI zoom. `zoom` reflows the layout (unlike transform:scale) so
+     it behaves exactly like the browser's Ctrl+- but is baked into the app.
+     Widely supported in Chromium/Edge/Safari; harmless where unsupported. */
+  zoom: var(--ba-zoom);
   font-family: Inter, "Inter var", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   /* Enable the optical niceties variable Inter ships with. */
   font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";

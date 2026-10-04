@@ -42,6 +42,15 @@ import AdminReports from './pages/admin/AdminReports'
 import AdminCategories from './pages/admin/AdminCategories'
 import AdminBrands from './pages/admin/AdminBrands'
 import AdminUsers from './pages/admin/AdminUsers'
+import AdminQuotes from './pages/admin/AdminQuotes'
+import AdminInvoices from './pages/admin/AdminInvoices'
+import AdminPurchaseOrders from './pages/admin/AdminPurchaseOrders'
+import AdminDeliveryNotes from './pages/admin/AdminDeliveryNotes'
+import AdminPayments from './pages/admin/AdminPayments'
+import AdminAccounting from './pages/admin/AdminAccounting'
+import AdminTax from './pages/admin/AdminTax'
+import AdminTreasury from './pages/admin/AdminTreasury'
+import AdminHr from './pages/admin/AdminHr'
 
 // Shared layout
 import PublicLayout from './components/layout/PublicLayout'
@@ -113,6 +122,15 @@ export default function App() {
                 <Route path="inventory" element={<AdminInventory />} />
                 <Route path="suppliers" element={<AdminSuppliers />} />
                 <Route path="services" element={<AdminServices />} />
+                <Route path="quotes" element={<AdminQuotes />} />
+                <Route path="invoices" element={<AdminInvoices />} />
+                <Route path="purchase-orders" element={<AdminPurchaseOrders />} />
+                <Route path="delivery-notes" element={<AdminDeliveryNotes />} />
+                <Route path="payments" element={<AdminPayments />} />
+                <Route path="accounting" element={<AdminAccounting />} />
+                <Route path="tax" element={<AdminTax />} />
+                <Route path="treasury" element={<AdminTreasury />} />
+                <Route path="hr" element={<AdminHr />} />
                 <Route path="branches" element={<AdminBranches />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="categories" element={<AdminCategories />} />

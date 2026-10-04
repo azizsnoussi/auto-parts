@@ -157,6 +157,101 @@ export interface Overview {
   generatedAt: string
 }
 
+// ── ERP analytics wire types (mirror `ErpAnalyticsDtos.java`) ────────────────
+
+/**
+ * A labelled amount + count slice, reused for status / method / type / contract
+ * breakdowns across the ERP summaries. `pct` is the share of the group's total
+ * amount, 0-100. For count-only groups (delivery notes, HR contracts) `amount`
+ * and `pct` are `0`.
+ */
+export interface ErpSlice {
+  /** Machine key, e.g. `pending`, `cheque`, `tva`, `CDI`. */
+  key: string
+  count: number
+  amount: number
+  pct: number
+}
+
+export interface ErpPaymentsSummary {
+  total: number
+  /** direction = in (encaissements clients). */
+  inflow: number
+  /** direction = out (décaissements fournisseurs). */
+  outflow: number
+  /** inflow − outflow. */
+  net: number
+  cleared: number
+  pending: number
+  bounced: number
+  byStatus: ErpSlice[]
+  byMethod: ErpSlice[]
+}
+
+export interface ErpPurchasingSummary {
+  total: number
+  totalHT: number
+  /** Orders not yet fully received (draft|sent|confirmed|partial). */
+  open: number
+  openValue: number
+  received: number
+  byStatus: ErpSlice[]
+}
+
+export interface ErpDeliverySummary {
+  total: number
+  /** delivered / total, 0-100. */
+  deliveredRate: number
+  /** Delivered but not yet linked to an invoice. */
+  toInvoice: number
+  delivered: number
+  pending: number
+  byStatus: ErpSlice[]
+}
+
+export interface ErpTaxSummary {
+  total: number
+  totalDue: number
+  overdue: number
+  toFile: number
+  paid: number
+  overdueCount: number
+  byType: ErpSlice[]
+  byStatus: ErpSlice[]
+}
+
+export interface ErpTreasurySummary {
+  accounts: number
+  /** Snapshot sum of all account balances (not period-scoped). */
+  totalBalance: number
+  cashBalance: number
+  bankBalance: number
+  movementsIn: number
+  movementsOut: number
+  instrumentsInPortfolio: number
+  instrumentsPortfolioValue: number
+  accountBalances: ErpSlice[]
+}
+
+export interface ErpHrSummary {
+  headcount: number
+  activeHeadcount: number
+  monthlyPayroll: number
+  pendingLeaves: number
+  byContract: ErpSlice[]
+}
+
+export interface ErpOverview {
+  from: string
+  to: string
+  payments: ErpPaymentsSummary
+  purchasing: ErpPurchasingSummary
+  delivery: ErpDeliverySummary
+  tax: ErpTaxSummary
+  treasury: ErpTreasurySummary
+  hr: ErpHrSummary
+}
+
 export interface MonthDetail {
   year: number
   month: number
